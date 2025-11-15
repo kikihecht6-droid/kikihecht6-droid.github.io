@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Break-Even-Rechner</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .scenarios-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        
+        .scenarios-container.two-scenarios {
+            grid-template-columns: 1fr 1fr;
+        }
+        
+        .scenario-wrapper {
+            border: 3px solid #667eea;
+            border-radius: 15px;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .scenario-wrapper.scenario-b {
+            border-color: #28a745;
+        }
+        
+        .scenario-header {
+            text-align: center;
+            font-size: 1.8em;
+            color: #667eea;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
+        .scenario-wrapper.scenario-b .scenario-header {
+            color: #28a745;
+        }
+        
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .scenario-b .section {
+            border-left-color: #28a745;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .section-header:hover {
+            opacity: 0.8;
+        }
+        
+        .section-title {
+            font-size: 1.2em;
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .toggle-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.3s;
+        }
+        
+        .scenario-b .toggle-btn {
+            background: #28a745;
+        }
+        
+        .toggle-btn:hover {
+            opacity: 0.8;
+            transform: translateY(-2px);
+        }
+        
+        .category-details {
+            display: none;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px dashed #ddd;
+        }
+        
+        .category-details.show {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+            font-size: 0.95em;
+        }
+        
+        input[type="number"], input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="number"]:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .scenario-b input[type="number"]:focus, .scenario-b input[type="text"]:focus {
+            border-color: #28a745;
+        }
+        
+        .add-category-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+        
+        .add-category-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+        
+        .remove-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            margin-left: 10px;
+        }
+        
+        .category-item {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: end;
+        }
+        
+        .category-item > div {
+            flex: 1;
+        }
+        
+        .results {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+        }
+        
+        .results h2 {
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            text-align: center;
+        }
+        
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        
+        .results-grid.two-column {
+            grid-template-columns: 1fr 1fr;
+        }
+        
+        .result-column h3 {
+            margin-bottom: 12px;
+            font-size: 1.2em;
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(255,255,255,0.3);
+        }
+        
+        .result-item {
+            background: rgba(255,255,255,0.1);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .result-label {
+            font-size: 0.85em;
+        }
+        
+        .result-value {
+            font-size: 1em;
+            font-weight: bold;
+        }
+        
+        .comparison-result {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 10px;
+            grid-column: 1 / -1;
+        }
+        
+        .comparison-result h3 {
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .calculate-btn {
+            background: #ffc107;
+            color: #333;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2em;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .calculate-btn:hover {
+            background: #ffb300;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .toggle-scenario-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2em;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .toggle-scenario-btn:hover {
+            background: #218838;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .toggle-scenario-btn.active {
+            background: #dc3545;
+        }
+        
+        .toggle-scenario-btn.active:hover {
+            background: #c82333;
+        }
+        
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            height: 450px;
+            border: 2px solid #e0e0e0;
+        }
+        
+        @media (max-width: 1200px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+            
+            .scenarios-container.two-scenarios {
+                grid-template-columns: 1fr;
+            }
+            
+            .results-grid.two-column {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Break-Even-Rechner</h1>
+        
+        <div class="button-group">
+            <button class="toggle-scenario-btn" id="toggleScenarioBtn" onclick="toggleScenarioB()">
+                ➕ Szenario B hinzufügen
+            </button>
+        </div>
+        
+        <div class="main-layout">
+            <!-- Linke Seite: Eingaben -->
+            <div class="left-panel">
+                <div class="scenarios-container" id="scenariosContainer">
+            <!-- Szenario A -->
+            <div class="scenario-wrapper">
+                <div class="scenario-header">📋 Szenario A</div>
+                
+                <!-- Fixkosten A -->
+                <div class="section">
+                    <div class="section-header" onclick="toggleSection('fixkosten-a')">
+                        <div class="section-title">🏢 Fixkosten</div>
+                        <button class="toggle-btn" type="button">Details</button>
+                    </div>
+                    <div class="input-group">
+                        <label>Gesamt Fixkosten (€/Monat):</label>
+                        <input type="number" id="fixkosten-gesamt-a" value="66" min="0" step="0.01" oninput="calculate()">
+                    </div>
+                    <div id="fixkosten-a" class="category-details">
+                        <div id="fixkosten-categories-a"></div>
+                        <button class="add-category-btn" type="button" onclick="addCategory('fixkosten', 'a')">+ Kategorie</button>
+                    </div>
+                </div>
+                
+                <!-- Variable Kosten A -->
+                <div class="section">
+                    <div class="section-header" onclick="toggleSection('variablekosten-a')">
+                        <div class="section-title">📦 Variable Kosten</div>
+                        <button class="toggle-btn" type="button">Details</button>
+                    </div>
+                    <div class="input-group">
+                        <label>Variable Kosten pro Einheit (€):</label>
+                        <input type="number" id="variablekosten-gesamt-a" value="5.1" min="0" step="0.01" oninput="calculate()">
+                    </div>
+                    <div id="variablekosten-a" class="category-details">
+                        <div id="variablekosten-categories-a"></div>
+                        <button class="add-category-btn" type="button" onclick="addCategory('variablekosten', 'a')">+ Kategorie</button>
+                    </div>
+                </div>
+                
+                <!-- Preis und Steuern A -->
+                <div class="section">
+                    <div class="section-title">💰 Verkaufspreis & Steuern</div>
+                    <div class="input-group">
+                        <label>Verkaufspreis pro Einheit (€):</label>
+                        <input type="number" id="verkaufspreis-a" value="10" min="0.01" step="0.01" oninput="calculate()">
+                    </div>
+                    <div class="input-group">
+                        <label>Mehrwertsteuer (%) <span id="mwst-betrag-a" style="color: #888; font-weight: normal;"></span>:</label>
+                        <input type="number" id="mwst-a" value="19" min="0" max="100" step="0.1" oninput="calculate()">
+                    </div>
+                    <div class="input-group">
+                        <label>Gewünschter Gewinn (€/Monat):</label>
+                        <input type="number" id="gewinn-a" value="100" min="0" step="0.01" oninput="calculate()">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Szenario B -->
+            <div class="scenario-wrapper scenario-b" id="scenarioBWrapper" style="display: none;">
+                <div class="scenario-header">📊 Szenario B</div>
+                
+                <!-- Fixkosten B -->
+                <div class="section">
+                    <div class="section-header" onclick="toggleSection('fixkosten-b')">
+                        <div class="section-title">🏢 Fixkosten</div>
+                        <button class="toggle-btn" type="button">Details</button>
+                    </div>
+                    <div class="input-group">
+                        <label>Gesamt Fixkosten (€/Monat):</label>
+                        <input type="number" id="fixkosten-gesamt-b" value="8000" min="0" step="0.01" oninput="calculate()">
+                    </div>
+                    <div id="fixkosten-b" class="category-details">
+                        <div id="fixkosten-categories-b"></div>
+                        <button class="add-category-btn" type="button" onclick="addCategory('fixkosten', 'b')">+ Kategorie</button>
+                    </div>
+                </div>
+                
+                <!-- Variable Kosten B -->
+                <div class="section">
+                    <div class="section-header" onclick="toggleSection('variablekosten-b')">
+                        <div class="section-title">📦 Variable Kosten</div>
+                        <button class="toggle-btn" type="button">Details</button>
+                    </div>
+                    <div class="input-group">
+                        <label>Variable Kosten pro Einheit (€):</label>
+                        <input type="number" id="variablekosten-gesamt-b" value="15" min="0" step="0.01" oninput="calculate()">
+                    </div>
+                    <div id="variablekosten-b" class="category-details">
+                        <div id="variablekosten-categories-b"></div>
+                        <button class="add-category-btn" type="button" onclick="addCategory('variablekosten', 'b')">+ Kategorie</button>
+                    </div>
+                </div>
+                
+                <!-- Preis und Steuern B -->
+                <div class="section">
+                    <div class="section-title">💰 Verkaufspreis & Steuern</div>
+                    <div class="input-group">
+                        <label>Verkaufspreis pro Einheit (€):</label>
+                        <input type="number" id="verkaufspreis-b" value="50" min="0.01" step="0.01" oninput="calculate()">
+                    </div>
+                    <div class="input-group">
+                        <label>Mehrwertsteuer (%) <span id="mwst-betrag-b" style="color: #888; font-weight: normal;"></span>:</label>
+                        <input type="number" id="mwst-b" value="19" min="0" max="100" step="0.1" oninput="calculate()">
+                    </div>
+                    <div class="input-group">
+                        <label>Gewünschter Gewinn (€/Monat):</label>
+                        <input type="number" id="gewinn-b" value="2000" min="0" step="0.01" oninput="calculate()">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button class="calculate-btn" type="button" onclick="calculate()">🔄 Berechnen</button>
+        </div>
+            </div>
+            
+            <!-- Rechte Seite: Ergebnisse und Graph -->
+            <div class="right-panel">
+                <!-- Diagramm -->
+                <div class="chart-container">
+                    <canvas id="breakEvenChart"></canvas>
+                </div>
+                
+                <!-- Ergebnisse -->
+                <div class="results" id="results" style="display: none;">
+                    <h2>📈 Ergebnisse</h2>
+                    <div class="results-grid" id="resultsGrid">
+                        <div class="result-column">
+                            <h3>Szenario A</h3>
+                            <div class="result-item">
+                                <span class="result-label">Break-Even (Einheiten):</span>
+                                <span class="result-value" id="bep-einheiten-a">-</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Break-Even-Umsatz:</span>
+                                <span class="result-value" id="bep-umsatz-a">-</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Deckungsbeitrag/Einheit:</span>
+                                <span class="result-value" id="deckungsbeitrag-a">-</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Für Zielgewinn:</span>
+                                <span class="result-value" id="gewinn-einheiten-a">-</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Netto-Verkaufspreis:</span>
+                                <span class="result-value" id="netto-preis-a">-</span>
+                            </div>
+                        </div>
+                        
+                        <div class="result-column" id="resultColumnB" style="display: none;">
+                            <h3>Szenario B</h3>
+                            <div class="result-item">
+                                <span class="result-label">Break-Even (Einheiten):</span>
+                                <span class="result-value" id="bep-einheiten-b">-</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Break-Even-Umsatz:</span>
+                                <span class="result-value" id="bep-umsatz-b">-</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Deckungsbeitrag/Einheit:</span>
+                                <span class="result-value" id="deckungsbeitrag-b">-</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Für Zielgewinn:</span>
+                                <span class="result-value" id="gewinn-einheiten-b">-</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Netto-Verkaufspreis:</span>
+                                <span class="result-value" id="netto-preis-b">-</span>
+                            </div>
+                        </div>
+                        
+                        <div class="comparison-result" id="comparisonResult" style="display: none;">
+                            <h3>⚖️ Vergleich der Szenarien</h3>
+                            <div id="comparisonContent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let chart = null;
+        let scenarioBActive = false;
+        
+        function toggleScenarioB() {
+            scenarioBActive = !scenarioBActive;
+            const scenarioBWrapper = document.getElementById('scenarioBWrapper');
+            const scenariosContainer = document.getElementById('scenariosContainer');
+            const toggleBtn = document.getElementById('toggleScenarioBtn');
+            const resultColumnB = document.getElementById('resultColumnB');
+            const comparisonResult = document.getElementById('comparisonResult');
+            
+            if (scenarioBActive) {
+                scenarioBWrapper.style.display = 'block';
+                scenariosContainer.classList.add('two-scenarios');
+                toggleBtn.textContent = '➖ Szenario B entfernen';
+                toggleBtn.classList.add('active');
+                resultColumnB.style.display = 'block';
+                comparisonResult.style.display = 'block';
+                document.getElementById('resultsGrid').classList.add('two-column');
+            } else {
+                scenarioBWrapper.style.display = 'none';
+                scenariosContainer.classList.remove('two-scenarios');
+                toggleBtn.textContent = '➕ Szenario B hinzufügen';
+                toggleBtn.classList.remove('active');
+                resultColumnB.style.display = 'none';
+                comparisonResult.style.display = 'none';
+                document.getElementById('resultsGrid').classList.remove('two-column');
+            }
+            
+            calculate();
+        }
+        
+        function toggleSection(id) {
+            const section = document.getElementById(id);
+            section.classList.toggle('show');
+        }
+        
+        function addCategory(type, scenario) {
+            const container = document.getElementById(type + '-categories-' + scenario);
+            const id = Date.now();
+            const div = document.createElement('div');
+            div.className = 'category-item';
+            div.innerHTML = '<div><label>Kategorie:</label><input type="text" placeholder="z.B. Miete, Material" data-type="' + type + '" data-scenario="' + scenario + '" data-id="' + id + '"></div><div><label>Betrag (€):</label><input type="number" value="0" min="0" step="0.01" data-type="' + type + '" data-scenario="' + scenario + '" data-id="' + id + '" oninput="updateTotal(\'' + type + '\', \'' + scenario + '\')"></div><button class="remove-btn" type="button" onclick="removeCategory(this, \'' + type + '\', \'' + scenario + '\')">✕</button>';
+            container.appendChild(div);
+        }
+        
+        function removeCategory(btn, type, scenario) {
+            btn.parentElement.remove();
+            updateTotal(type, scenario);
+        }
+        
+        function updateTotal(type, scenario) {
+            const inputs = document.querySelectorAll('input[type="number"][data-type="' + type + '"][data-scenario="' + scenario + '"]');
+            let total = 0;
+            inputs.forEach(function(input) {
+                total += parseFloat(input.value) || 0;
+            });
+            document.getElementById(type + '-gesamt-' + scenario).value = total;
+            calculate();
+        }
+        
+        function calculateScenario(scenario) {
+            const fixkostenInput = document.getElementById('fixkosten-gesamt-' + scenario);
+            const variableKostenInput = document.getElementById('variablekosten-gesamt-' + scenario);
+            const verkaufspreisInput = document.getElementById('verkaufspreis-' + scenario);
+            const mwstInput = document.getElementById('mwst-' + scenario);
+            const gewinnInput = document.getElementById('gewinn-' + scenario);
+            
+            if (!fixkostenInput.value || !variableKostenInput.value || !verkaufspreisInput.value || !mwstInput.value) {
+                return null;
+            }
+            
+            const fixkosten = parseFloat(fixkostenInput.value);
+            const variableKosten = parseFloat(variableKostenInput.value);
+            const verkaufspreis = parseFloat(verkaufspreisInput.value);
+            const mwst = parseFloat(mwstInput.value);
+            const gewinn = parseFloat(gewinnInput.value) || 0;
+            
+            if (fixkosten < 0 || variableKosten < 0 || verkaufspreis <= 0 || mwst < 0) {
+                return null;
+            }
+            
+            const nettoPreis = verkaufspreis / (1 + mwst / 100);
+            const deckungsbeitrag = nettoPreis - variableKosten;
+            
+            if (deckungsbeitrag <= 0) {
+                return null;
+            }
+            
+            const bepEinheiten = Math.ceil(fixkosten / deckungsbeitrag);
+            const bepUmsatz = bepEinheiten * verkaufspreis;
+            const gewinnEinheiten = Math.ceil((fixkosten + gewinn) / deckungsbeitrag);
+            
+            return {
+                fixkosten: fixkosten,
+                variableKosten: variableKosten,
+                nettoPreis: nettoPreis,
+                deckungsbeitrag: deckungsbeitrag,
+                bepEinheiten: bepEinheiten,
+                bepUmsatz: bepUmsatz,
+                gewinnEinheiten: gewinnEinheiten,
+                verkaufspreis: verkaufspreis
+            };
+        }
+        
+        function calculate() {
+            const resultA = calculateScenario('a');
+            
+            if (!resultA) {
+                return;
+            }
+            
+            // Update MwSt-Betrag Anzeige für A
+            const verkaufspreisA = parseFloat(document.getElementById('verkaufspreis-a').value) || 0;
+            const mwstA = parseFloat(document.getElementById('mwst-a').value) || 0;
+            const mwstBetragA = verkaufspreisA * (mwstA / 100);
+            const nettoErtragA = verkaufspreisA - mwstBetragA;
+            document.getElementById('mwst-betrag-a').textContent = '(MwSt: ' + mwstBetragA.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'}) + ' | Ertrag: ' + nettoErtragA.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'}) + ')';
+            
+            document.getElementById('bep-einheiten-a').textContent = resultA.bepEinheiten.toLocaleString('de-DE');
+            document.getElementById('bep-umsatz-a').textContent = resultA.bepUmsatz.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
+            document.getElementById('deckungsbeitrag-a').textContent = resultA.deckungsbeitrag.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
+            document.getElementById('gewinn-einheiten-a').textContent = resultA.gewinnEinheiten.toLocaleString('de-DE');
+            document.getElementById('netto-preis-a').textContent = resultA.nettoPreis.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
+            
+            let resultB = null;
+            if (scenarioBActive) {
+                resultB = calculateScenario('b');
+                
+                if (!resultB) {
+                    return;
+                }
+                
+                // Update MwSt-Betrag Anzeige für B
+                const verkaufspreisB = parseFloat(document.getElementById('verkaufspreis-b').value) || 0;
+                const mwstB = parseFloat(document.getElementById('mwst-b').value) || 0;
+                const mwstBetragB = verkaufspreisB * (mwstB / 100);
+                const nettoErtragB = verkaufspreisB - mwstBetragB;
+                document.getElementById('mwst-betrag-b').textContent = '(MwSt: ' + mwstBetragB.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'}) + ' | Ertrag: ' + nettoErtragB.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'}) + ')';
+                
+                document.getElementById('bep-einheiten-b').textContent = resultB.bepEinheiten.toLocaleString('de-DE');
+                document.getElementById('bep-umsatz-b').textContent = resultB.bepUmsatz.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
+                document.getElementById('deckungsbeitrag-b').textContent = resultB.deckungsbeitrag.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
+                document.getElementById('gewinn-einheiten-b').textContent = resultB.gewinnEinheiten.toLocaleString('de-DE');
+                document.getElementById('netto-preis-b').textContent = resultB.nettoPreis.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
+                
+                compareScenarios(resultA, resultB);
+            }
+            
+            document.getElementById('results').style.display = 'block';
+            createChart(resultA, resultB);
+        }
+        
+        function compareScenarios(resultA, resultB) {
+            const varDiff = resultA.variableKosten - resultB.variableKosten;
+            const fixDiff = resultB.fixkosten - resultA.fixkosten;
+            
+            let comparisonHTML = '';
+            
+            if (Math.abs(varDiff) < 0.01) {
+                if (resultA.fixkosten < resultB.fixkosten) {
+                    comparisonHTML = '<p><strong>Empfehlung:</strong> Szenario A ist immer günstiger (niedrigere Fixkosten)</p>';
+                } else {
+                    comparisonHTML = '<p><strong>Empfehlung:</strong> Szenario B ist immer günstiger (niedrigere Fixkosten)</p>';
+                }
+            } else {
+                const indifferenzMenge = Math.abs(fixDiff / varDiff);
+                
+                comparisonHTML = '<p><strong>Indifferenzmenge:</strong> ' + Math.round(indifferenzMenge).toLocaleString('de-DE') + ' Einheiten</p><p>Bei dieser Menge sind beide Szenarien gleich teuer.</p><p style="margin-top: 10px;"><strong>Bei weniger als ' + Math.round(indifferenzMenge).toLocaleString('de-DE') + ' Einheiten:</strong> ' + (resultA.fixkosten < resultB.fixkosten ? 'Szenario A' : 'Szenario B') + ' wählen<br><strong>Bei mehr als ' + Math.round(indifferenzMenge).toLocaleString('de-DE') + ' Einheiten:</strong> ' + (resultA.variableKosten < resultB.variableKosten ? 'Szenario A' : 'Szenario B') + ' wählen</p>';
+            }
+            
+            comparisonHTML += '<p style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.3);"><strong>Break-Even Vergleich:</strong><br>Szenario A: ' + resultA.bepEinheiten + ' Einheiten | Szenario B: ' + resultB.bepEinheiten + ' Einheiten</p>';
+            
+            document.getElementById('comparisonContent').innerHTML = comparisonHTML;
+        }
+        
+        function createChart(resultA, resultB) {
+            const ctx = document.getElementById('breakEvenChart').getContext('2d');
+            
+            // Stelle sicher, dass der Graph groß genug ist für alle wichtigen Punkte
+            let maxUnits = Math.max(resultA.gewinnEinheiten, resultA.bepEinheiten);
+            if (scenarioBActive && resultB) {
+                maxUnits = Math.max(
+                    maxUnits,
+                    resultB.gewinnEinheiten, 
+                    resultB.bepEinheiten
+                );
+            }
+            // Füge 20% Puffer hinzu, damit die Linien gut sichtbar sind
+            maxUnits = Math.ceil(maxUnits * 1.2);
+            
+            const units = [];
+            const gesamtkostenA = [];
+            const umsatzA = [];
+            const gesamtkostenB = [];
+            const umsatzB = [];
+            
+            const step = Math.max(1, Math.ceil(maxUnits / 30));
+            for (let i = 0; i <= maxUnits; i += step) {
+                units.push(i);
+                gesamtkostenA.push(resultA.fixkosten + (resultA.variableKosten * i));
+                umsatzA.push(resultA.nettoPreis * i);
+                
+                if (scenarioBActive && resultB) {
+                    gesamtkostenB.push(resultB.fixkosten + (resultB.variableKosten * i));
+                    umsatzB.push(resultB.nettoPreis * i);
+                }
+            }
+            
+            if (chart) {
+                chart.destroy();
+            }
+            
+            const datasets = [
+                {
+                    label: 'Gesamtkosten A',
+                    data: gesamtkostenA,
+                    borderColor: '#dc3545',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    tension: 0.1,
+                    borderWidth: 2,
+                    pointRadius: 0
+                },
+                {
+                    label: 'Umsatz A',
+                    data: umsatzA,
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.1,
+                    borderWidth: 2,
+                    pointRadius: 0
+                }
+            ];
+            
+            if (scenarioBActive && resultB) {
+                datasets.push(
+                    {
+                        label: 'Gesamtkosten B',
+                        data: gesamtkostenB,
+                        borderColor: '#fd7e14',
+                        backgroundColor: 'rgba(253, 126, 20, 0.1)',
+                        tension: 0.1,
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0
+                    },
+                    {
+                        label: 'Umsatz B',
+                        data: umsatzB,
+                        borderColor: '#28a745',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        tension: 0.1,
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0
+                    }
+                );
+            }
+            
+            // Annotations für Linien
+            const annotations = {};
+            
+            // Vertikale Linie für Gewinnpunkt A (nur wenn im sichtbaren Bereich)
+            if (resultA.gewinnEinheiten <= maxUnits) {
+                annotations.gewinnLineA = {
+                    type: 'line',
+                    xMin: resultA.gewinnEinheiten,
+                    xMax: resultA.gewinnEinheiten,
+                    borderColor: '#667eea',
+                    borderWidth: 3,
+                    borderDash: [10, 5],
+                    label: {
+                        display: true,
+                        content: 'Zielgewinn A: ' + resultA.gewinnEinheiten + ' Einh.',
+                        position: 'start',
+                        backgroundColor: '#667eea',
+                        color: '#fff',
+                        font: {
+                            size: 11,
+                            weight: 'bold'
+                        },
+                        padding: 6,
+                        yAdjust: -10
+                    }
+                };
+            }
+            
+            // Vertikale Linie für Break-Even Punkt A (nur wenn im sichtbaren Bereich)
+            if (resultA.bepEinheiten <= maxUnits) {
+                annotations.bepLineA = {
+                    type: 'line',
+                    xMin: resultA.bepEinheiten,
+                    xMax: resultA.bepEinheiten,
+                    borderColor: '#ffc107',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    label: {
+                        display: true,
+                        content: 'Break-Even A: ' + resultA.bepEinheiten + ' Einh.',
+                        position: 'start',
+                        backgroundColor: '#ffc107',
+                        color: '#333',
+                        font: {
+                            size: 10,
+                            weight: 'bold'
+                        },
+                        padding: 4,
+                        yAdjust: 30
+                    }
+                };
+            }
+            
+            if (scenarioBActive && resultB) {
+                // Vertikale Linie für Gewinnpunkt B (nur wenn im sichtbaren Bereich)
+                if (resultB.gewinnEinheiten <= maxUnits) {
+                    annotations.gewinnLineB = {
+                        type: 'line',
+                        xMin: resultB.gewinnEinheiten,
+                        xMax: resultB.gewinnEinheiten,
+                        borderColor: '#28a745',
+                        borderWidth: 3,
+                        borderDash: [10, 5],
+                        label: {
+                            display: true,
+                            content: 'Zielgewinn B: ' + resultB.gewinnEinheiten + ' Einh.',
+                            position: 'end',
+                            backgroundColor: '#28a745',
+                            color: '#fff',
+                            font: {
+                                size: 11,
+                                weight: 'bold'
+                            },
+                            padding: 6,
+                            yAdjust: -10
+                        }
+                    };
+                }
+                
+                // Vertikale Linie für Break-Even Punkt B (nur wenn im sichtbaren Bereich)
+                if (resultB.bepEinheiten <= maxUnits) {
+                    annotations.bepLineB = {
+                        type: 'line',
+                        xMin: resultB.bepEinheiten,
+                        xMax: resultB.bepEinheiten,
+                        borderColor: '#fd7e14',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        label: {
+                            display: true,
+                            content: 'Break-Even B: ' + resultB.bepEinheiten + ' Einh.',
+                            position: 'end',
+                            backgroundColor: '#fd7e14',
+                            color: '#fff',
+                            font: {
+                                size: 10,
+                                weight: 'bold'
+                            },
+                            padding: 4,
+                            yAdjust: 30
+                        }
+                    };
+                }
+            }
+            
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: units,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: scenarioBActive ? 'Break-Even-Analyse - Vergleich Szenario A vs B' : 'Break-Even-Analyse',
+                            font: { size: 18, weight: 'bold' },
+                            padding: 20
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                padding: 15,
+                                font: { size: 12 }
+                            }
+                        },
+                        tooltip: {
+                            enabled: true,
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += context.parsed.y.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Verkaufte Einheiten',
+                                font: { size: 14, weight: 'bold' }
+                            },
+                            grid: {
+                                display: true,
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Betrag (€)',
+                                font: { size: 14, weight: 'bold' }
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString('de-DE') + ' €';
+                                }
+                            },
+                            grid: {
+                                display: true,
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+        
+        // Initiale Berechnung beim Laden
+        window.addEventListener('DOMContentLoaded', function() {
+            // Fixkosten Kategorien für Szenario A
+            addInitialCategory('fixkosten', 'a', 'Amazon professioneller Tarif', 46);
+            addInitialCategory('fixkosten', 'a', 'Hosting eigener Webseite', 20);
+            
+            // Variable Kosten Kategorien für Szenario A
+            addInitialCategory('variablekosten', 'a', 'Elektronik', 2.76);
+            addInitialCategory('variablekosten', 'a', 'Gummiband', 0.04);
+            addInitialCategory('variablekosten', 'a', 'Stopper', 0.1);
+            addInitialCategory('variablekosten', 'a', 'Silikon', 0.2);
+            addInitialCategory('variablekosten', 'a', 'Verpackung', 0.2);
+            addInitialCategory('variablekosten', 'a', 'Versand', 1.8);
+            
+            calculate();
+        });
+        
+        function addInitialCategory(type, scenario, name, amount) {
+            const container = document.getElementById(type + '-categories-' + scenario);
+            const id = Date.now() + Math.random();
+            const div = document.createElement('div');
+            div.className = 'category-item';
+            div.innerHTML = '<div><label>Kategorie:</label><input type="text" value="' + name + '" data-type="' + type + '" data-scenario="' + scenario + '" data-id="' + id + '"></div><div><label>Betrag (€):</label><input type="number" value="' + amount + '" min="0" step="0.01" data-type="' + type + '" data-scenario="' + scenario + '" data-id="' + id + '" oninput="updateTotal(\'' + type + '\', \'' + scenario + '\')"></div><button class="remove-btn" type="button" onclick="removeCategory(this, \'' + type + '\', \'' + scenario + '\')">✕</button>';
+            container.appendChild(div);
+        }
+    </script>
+</body>
+</html>
