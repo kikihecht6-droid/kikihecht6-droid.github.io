@@ -299,6 +299,7 @@
             justify-content: center;
             gap: 20px;
             margin: 10px 0 20px 0;
+            flex-wrap: wrap;
         }
         
         .calculate-btn {
@@ -345,6 +346,40 @@
             background: #c82333;
         }
         
+        .mode-switch {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2em;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .mode-switch:hover {
+            background: #5a6268;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .mode-switch.active {
+            background: #17a2b8;
+        }
+        
+        .mode-switch.active:hover {
+            background: #138496;
+        }
+        
+        .reverse-mode {
+            display: none;
+        }
+        
+        .reverse-mode.active {
+            display: block;
+        }
+        
         .chart-container {
             background: white;
             padding: 20px;
@@ -370,9 +405,10 @@
 </head>
 <body>
     <div class="container">
-        <h1>📊 Break-Even-Rechner</h1>
-        
         <div class="button-group">
+            <button class="mode-switch" id="modeSwitchBtn" onclick="toggleMode()">
+                🔄 Modus: Verkäufe festlegen
+            </button>
             <button class="toggle-scenario-btn" id="toggleScenarioBtn" onclick="toggleScenarioB()">
                 ➕ Szenario B hinzufügen
             </button>
@@ -429,9 +465,13 @@
                         <label>Mehrwertsteuer (%) <span id="mwst-betrag-a" style="color: #888; font-weight: normal;"></span>:</label>
                         <input type="number" id="mwst-a" value="19" min="0" max="100" step="0.1" oninput="calculate()">
                     </div>
-                    <div class="input-group">
+                    <div class="input-group normal-mode">
                         <label>Gewünschter Gewinn (€/Monat):</label>
                         <input type="number" id="gewinn-a" value="100" min="0" step="0.01" oninput="calculate()">
+                    </div>
+                    <div class="input-group reverse-mode">
+                        <label>Anzahl Verkäufe pro Monat:</label>
+                        <input type="number" id="verkaeufe-a" value="50" min="0" step="1" oninput="calculate()">
                     </div>
                 </div>
             </div>
@@ -521,9 +561,13 @@
                                 <span class="result-label">Deckungsbeitrag/Einheit:</span>
                                 <span class="result-value" id="deckungsbeitrag-a">-</span>
                             </div>
-                            <div class="result-item">
+                            <div class="result-item normal-mode">
                                 <span class="result-label">Für Zielgewinn:</span>
                                 <span class="result-value" id="gewinn-einheiten-a">-</span>
+                            </div>
+                            <div class="result-item reverse-mode">
+                                <span class="result-label">Gewinn bei Verkäufen:</span>
+                                <span class="result-value" id="gewinn-betrag-a">-</span>
                             </div>
                             <div class="result-item">
                                 <span class="result-label">Netto-Verkaufspreis:</span>
@@ -545,9 +589,13 @@
                                 <span class="result-label">Deckungsbeitrag/Einheit:</span>
                                 <span class="result-value" id="deckungsbeitrag-b">-</span>
                             </div>
-                            <div class="result-item">
+                            <div class="result-item normal-mode">
                                 <span class="result-label">Für Zielgewinn:</span>
                                 <span class="result-value" id="gewinn-einheiten-b">-</span>
+                            </div>
+                            <div class="result-item reverse-mode">
+                                <span class="result-label">Gewinn bei Verkäufen:</span>
+                                <span class="result-value" id="gewinn-betrag-b">-</span>
                             </div>
                             <div class="result-item">
                                 <span class="result-label">Netto-Verkaufspreis:</span>
@@ -568,6 +616,28 @@
     <script>
         let chart = null;
         let scenarioBActive = false;
+        let reverseMode = false;
+        
+        function toggleMode() {
+            reverseMode = !reverseMode;
+            const modeBtn = document.getElementById('modeSwitchBtn');
+            const normalModeElements = document.querySelectorAll('.normal-mode');
+            const reverseModeElements = document.querySelectorAll('.reverse-mode');
+            
+            if (reverseMode) {
+                modeBtn.textContent = '🔄 Modus: Gewinn berechnen';
+                modeBtn.classList.add('active');
+                normalModeElements.forEach(el => el.style.display = 'none');
+                reverseModeElements.forEach(el => el.classList.add('active'));
+            } else {
+                modeBtn.textContent = '🔄 Modus: Verkäufe festlegen';
+                modeBtn.classList.remove('active');
+                normalModeElements.forEach(el => el.style.display = 'block');
+                reverseModeElements.forEach(el => el.classList.remove('active'));
+            }
+            
+            calculate();
+        }
         
         function toggleScenarioB() {
             scenarioBActive = !scenarioBActive;
@@ -633,6 +703,7 @@
             const verkaufspreisInput = document.getElementById('verkaufspreis-' + scenario);
             const mwstInput = document.getElementById('mwst-' + scenario);
             const gewinnInput = document.getElementById('gewinn-' + scenario);
+            const verkaufeInput = document.getElementById('verkaeufe-' + scenario);
             
             if (!fixkostenInput.value || !variableKostenInput.value || !verkaufspreisInput.value || !mwstInput.value) {
                 return null;
@@ -642,7 +713,6 @@
             const variableKosten = parseFloat(variableKostenInput.value);
             const verkaufspreis = parseFloat(verkaufspreisInput.value);
             const mwst = parseFloat(mwstInput.value);
-            const gewinn = parseFloat(gewinnInput.value) || 0;
             
             if (fixkosten < 0 || variableKosten < 0 || verkaufspreis <= 0 || mwst < 0) {
                 return null;
@@ -657,7 +727,20 @@
             
             const bepEinheiten = Math.ceil(fixkosten / deckungsbeitrag);
             const bepUmsatz = bepEinheiten * verkaufspreis;
-            const gewinnEinheiten = Math.ceil((fixkosten + gewinn) / deckungsbeitrag);
+            
+            let gewinnEinheiten, gewinnBetrag, verkaeufe, gewinn;
+            
+            if (reverseMode) {
+                // Verkäufe sind gegeben, berechne Gewinn
+                verkaeufe = parseFloat(verkaufeInput.value) || 0;
+                gewinnBetrag = (verkaeufe * deckungsbeitrag) - fixkosten;
+                gewinnEinheiten = verkaeufe;
+            } else {
+                // Gewinn ist gegeben, berechne benötigte Verkäufe
+                gewinn = parseFloat(gewinnInput.value) || 0;
+                gewinnEinheiten = Math.ceil((fixkosten + gewinn) / deckungsbeitrag);
+                gewinnBetrag = (gewinnEinheiten * deckungsbeitrag) - fixkosten;
+            }
             
             return {
                 fixkosten: fixkosten,
@@ -667,6 +750,7 @@
                 bepEinheiten: bepEinheiten,
                 bepUmsatz: bepUmsatz,
                 gewinnEinheiten: gewinnEinheiten,
+                gewinnBetrag: gewinnBetrag,
                 verkaufspreis: verkaufspreis
             };
         }
@@ -688,7 +772,13 @@
             document.getElementById('bep-einheiten-a').textContent = resultA.bepEinheiten.toLocaleString('de-DE');
             document.getElementById('bep-umsatz-a').textContent = resultA.bepUmsatz.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
             document.getElementById('deckungsbeitrag-a').textContent = resultA.deckungsbeitrag.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
-            document.getElementById('gewinn-einheiten-a').textContent = resultA.gewinnEinheiten.toLocaleString('de-DE');
+            
+            if (reverseMode) {
+                document.getElementById('gewinn-betrag-a').textContent = resultA.gewinnBetrag.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
+            } else {
+                document.getElementById('gewinn-einheiten-a').textContent = resultA.gewinnEinheiten.toLocaleString('de-DE');
+            }
+            
             document.getElementById('netto-preis-a').textContent = resultA.nettoPreis.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
             
             let resultB = null;
@@ -709,7 +799,13 @@
                 document.getElementById('bep-einheiten-b').textContent = resultB.bepEinheiten.toLocaleString('de-DE');
                 document.getElementById('bep-umsatz-b').textContent = resultB.bepUmsatz.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
                 document.getElementById('deckungsbeitrag-b').textContent = resultB.deckungsbeitrag.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
-                document.getElementById('gewinn-einheiten-b').textContent = resultB.gewinnEinheiten.toLocaleString('de-DE');
+                
+                if (reverseMode) {
+                    document.getElementById('gewinn-betrag-b').textContent = resultB.gewinnBetrag.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
+                } else {
+                    document.getElementById('gewinn-einheiten-b').textContent = resultB.gewinnEinheiten.toLocaleString('de-DE');
+                }
+                
                 document.getElementById('netto-preis-b').textContent = resultB.nettoPreis.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
                 
                 compareScenarios(resultA, resultB);
